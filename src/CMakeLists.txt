@@ -32,6 +32,7 @@
 #############################################################################
  
 set(PSP_PLATFORM_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cfe_psp_exception.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cfe_psp_memory.c 
     ${CMAKE_CURRENT_SOURCE_DIR}/cfe_psp_memtab.c 

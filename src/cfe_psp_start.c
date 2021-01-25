@@ -94,7 +94,6 @@ typedef struct
 /*
 ** Prototypes for this module
 */
-void CFE_PSP_SigintHandler (int arg);
 void CFE_PSP_TimerHandler(void);
 void CFE_PSP_DeleteOSResources (void);
 void CFE_PSP_DisplayUsage(char *Name );
@@ -317,11 +316,6 @@ void PSP_Main(int argc, char *argv[])
    reset_subtype = CommandData.SubType;
 
    /*
-   ** Install sigint_handler as the signal handler for SIGINT.
-   */
-   signal(SIGINT, CFE_PSP_SigintHandler);
-
-   /*
    ** Init timer counter
    */
    CFE_PSP_GlobalData.TimerCounter = 0;
@@ -440,26 +434,6 @@ void PSP_Main(int argc, char *argv[])
    }
 }
 
-/******************************************************************************
-**  Function:  CFE_PSP_SigintHandler()
-**
-**  Purpose:
-**    SIGINT routine for linux/OSX
-**
-**  Arguments:
-**    (none)
-**
-**  Return:
-**    (none)
-*/
-
-void CFE_PSP_SigintHandler (int arg)
-{
-      printf("\nCFE_PSP: Control-C Captured - Exiting cFE\n");
-      CFE_PSP_DeleteProcessorReservedMemory();
-      CFE_PSP_DeleteOSResources();
-      exit(0);
-}
 
 /******************************************************************************
 **  Function:  CFE_PSP_TimerHandler()

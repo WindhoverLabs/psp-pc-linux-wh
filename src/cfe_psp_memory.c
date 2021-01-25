@@ -86,9 +86,6 @@ extern unsigned int _fini;
 uint8 *CFE_PSP_CDSPtr = 0;
 uint8 *CFE_PSP_ResetAreaPtr = 0;
 uint8 *CFE_PSP_UserReservedAreaPtr = 0;
-int    ResetAreaShmId;
-int    CDSShmId;
-int    UserShmId;
                                                                               
                                                                               
                                                                               
@@ -120,77 +117,24 @@ int32 CFE_PSP_InitCDS(uint32 RestartType )
    key_t key;
 
    /* 
-   ** Make the Shared memory key
-   */
-   if ((key = ftok(CFE_PSP_CDS_KEY_FILE, 'R')) == -1) 
-   {
-        OS_printf("CFE_PSP: Cannot Create CDS Shared memory key!\n");
-        exit(-1);
-   }
-
-   /* 
-   ** connect to (and possibly create) the segment: 
-   */
-   if ((CDSShmId = shmget(key, CFE_PSP_CDS_SIZE, 0644 | IPC_CREAT)) == -1) 
-   {
-        OS_printf("CFE_PSP: Cannot shmget CDS Shared memory Segment!  CFE_PSP_CDS_SIZE=%u  errno=%i\n", CFE_PSP_CDS_SIZE, errno);
-        exit(-1);
-   }
-
-   /* 
    ** attach to the segment to get a pointer to it: 
    */
-   CFE_PSP_CDSPtr = shmat(CDSShmId, (void *)0, 0);
+   CFE_PSP_CDSPtr = malloc(CFE_PSP_CDS_SIZE);
    if (CFE_PSP_CDSPtr == (uint8 *)(-1)) 
    {
-        OS_printf("CFE_PSP: Cannot shmat to CDS Shared memory Segment!\n");
+        OS_printf("CFE_PSP: Cannot malloc CDS Shared memory Segment!\n");
         exit(-1);
    }
 
-   if ( RestartType == CFE_ES_POWERON_RESET )
-   {
-      OS_printf("CFE_PSP: Clearing out CFE CDS Shared memory segment.\n");
-      memset(CFE_PSP_CDSPtr, 0, CFE_PSP_CDS_SIZE);
-   }
+   OS_printf("CFE_PSP: Clearing out CFE CDS Shared memory segment.\n");
+   memset(CFE_PSP_CDSPtr, 0, CFE_PSP_CDS_SIZE);
    
    return_code = CFE_PSP_SUCCESS;
+
    return(return_code);
 
 }
 
-
-/******************************************************************************
-**  Function: CFE_PSP_DeleteCDS
-**
-**  Purpose:
-**   This is an internal function to delete the CDS Shared memory segment. 
-**
-**  Arguments:
-**    (none)
-**
-**  Return:
-**    (none)
-*/
-void CFE_PSP_DeleteCDS(void)
-{
-
-   int    ReturnCode;
-   struct shmid_ds ShmCtrl;
-   
-   ReturnCode = shmctl(CDSShmId, IPC_RMID, &ShmCtrl);
-   
-   if ( ReturnCode == 0 )
-   {
-      printf("CFE_PSP: Critical Data Store Shared memory segment removed\n");
-   }
-   else
-   {
-      printf("CFE_PSP: Error Removing Critical Data Store Shared memory Segment.\n");
-      printf("CFE_PSP: It can be manually checked and removed using the ipcs and ipcrm commands.\n");
-   }
-
-
-}
 
 /******************************************************************************
 **  Function: CFE_PSP_GetCDSSize
@@ -328,79 +272,24 @@ int32 CFE_PSP_ReadFromCDS(void *PtrToDataToRead, uint32 CDSOffset, uint32 NumByt
 */
 int32 CFE_PSP_InitResetArea(uint32 RestartType)
 {
-
    int32 return_code;
-   key_t key;
-
-   /* 
-   ** Make the Shared memory key
-   */
-   if ((key = ftok(CFE_PSP_RESET_KEY_FILE, 'R')) == -1) 
-   {
-        OS_printf("CFE_PSP: Cannot Create Reset Area Shared memory key!\n");
-        exit(-1);
-   }
-
-   /* 
-   ** connect to (and possibly create) the segment: 
-   */
-   if ((ResetAreaShmId = shmget(key, CFE_PSP_RESET_AREA_SIZE, 0644 | IPC_CREAT)) == -1) 
-   {
-        OS_printf("CFE_PSP: Cannot shmget Reset Area Shared memory Segment!\n");
-        exit(-1);
-   }
 
    /* 
    ** attach to the segment to get a pointer to it: 
    */
-   CFE_PSP_ResetAreaPtr = shmat(ResetAreaShmId, (void *)0, 0);
+   CFE_PSP_ResetAreaPtr = malloc(CFE_PSP_RESET_AREA_SIZE);
    if (CFE_PSP_ResetAreaPtr == (uint8 *)(-1)) 
    {
-        OS_printf("CFE_PSP: Cannot shmat to Reset Area Shared memory Segment!\n");
+        OS_printf("CFE_PSP: Cannot malloc Reset Area Shared memory Segment!\n");
         exit(-1);
    }
 
-   if ( RestartType == CFE_ES_POWERON_RESET )
-   {
-      OS_printf("CFE_PSP: Clearing out CFE Reset Shared memory segment.\n");
-      memset(CFE_PSP_ResetAreaPtr, 0, CFE_PSP_RESET_AREA_SIZE);
-   }
+   OS_printf("CFE_PSP: Clearing out CFE Reset Shared memory segment.\n");
+   memset(CFE_PSP_ResetAreaPtr, 0, CFE_PSP_RESET_AREA_SIZE);
    
    return_code = CFE_PSP_SUCCESS;
+
    return(return_code);
-}
-
-
-/******************************************************************************
-**  Function: CFE_PSP_DeleteResetArea
-**
-**  Purpose:
-**   This is an internal function to delete the Reset Area Shared memory segment. 
-**
-**  Arguments:
-**    (none)
-**
-**  Return:
-**    (none)
-*/
-void CFE_PSP_DeleteResetArea(void)
-{
-   int    ReturnCode;
-   struct shmid_ds ShmCtrl;
-   
-   ReturnCode = shmctl(ResetAreaShmId, IPC_RMID, &ShmCtrl);
-   
-   if ( ReturnCode == 0 )
-   {
-      printf("Reset Area Shared memory segment removed\n");
-   }
-   else
-   {
-      printf("Error Removing Reset Area Shared memory Segment.\n");
-      printf("It can be manually checked and removed using the ipcs and ipcrm commands.\n");
-   }
-
-
 }
 
 
@@ -460,76 +349,26 @@ int32 CFE_PSP_GetResetArea (cpuaddr *PtrToResetArea, uint32 *SizeOfResetArea)
 int32 CFE_PSP_InitUserReservedArea(uint32 RestartType )
 {
    int32 return_code;
-   key_t key;
-
-   /* 
-   ** Make the Shared memory key
-   */
-   if ((key = ftok(CFE_PSP_RESERVED_KEY_FILE, 'R')) == -1) 
-   {
-        OS_printf("CFE_PSP: Cannot Create User Reserved Area Shared memory key!\n");
-        exit(-1);
-   }
-
-   /* 
-   ** connect to (and possibly create) the segment: 
-   */
-   if ((UserShmId = shmget(key, CFE_PSP_USER_RESERVED_SIZE, 0644 | IPC_CREAT)) == -1) 
-   {
-        OS_printf("CFE_PSP: Cannot shmget User Reserved Area Shared memory Segment!\n");
-        exit(-1);
-   }
 
    /* 
    ** attach to the segment to get a pointer to it: 
    */
-   CFE_PSP_UserReservedAreaPtr = shmat(UserShmId, (void *)0, 0);
+   CFE_PSP_UserReservedAreaPtr = malloc(CFE_PSP_USER_RESERVED_SIZE);
    if (CFE_PSP_UserReservedAreaPtr == (uint8 *)(-1)) 
    {
-        OS_printf("CFE_PSP: Cannot shmat to User Reserved Area Shared memory Segment!\n");
+        OS_printf("CFE_PSP: Cannot malloc User Reserved Area Shared memory Segment!\n");
         exit(-1);
    }
 
-   if ( RestartType == CFE_ES_POWERON_RESET )
-   {
-      OS_printf("CFE_PSP: Clearing out CFE User Reserved Shared memory segment.\n");
-      memset(CFE_PSP_UserReservedAreaPtr, 0, CFE_PSP_USER_RESERVED_SIZE);
-   }
+   OS_printf("CFE_PSP: Clearing out CFE User Reserved Shared memory segment.\n");
+   memset(CFE_PSP_UserReservedAreaPtr, 0, CFE_PSP_USER_RESERVED_SIZE);
    
    return_code = CFE_PSP_SUCCESS;
+
    return(return_code);
 
 }
 
-/******************************************************************************
-**  Function: CFE_PSP_DeleteUserReservedArea
-**
-**  Purpose:
-**   This is an internal function to delete the User Reserved Shared memory segment. 
-**
-**  Arguments:
-**    (none)
-**
-**  Return:
-**    (none)
-*/
-void CFE_PSP_DeleteUserReservedArea(void)
-{
-   int    ReturnCode;
-   struct shmid_ds ShmCtrl;
-   
-   ReturnCode = shmctl(UserShmId, IPC_RMID, &ShmCtrl);
-   
-   if ( ReturnCode == 0 )
-   {
-      printf("User Reserved Area Shared memory segment removed\n");
-   }
-   else
-   {
-      printf("Error Removing User Reserved Area Shared memory Segment.\n");
-      printf("It can be manually checked and removed using the ipcs and ipcrm commands.\n");
-   }
-}
 
 
 /******************************************************************************
@@ -679,27 +518,6 @@ int32 CFE_PSP_InitProcessorReservedMemory( uint32 RestartType )
    }
 
    return(return_code);
-}
-
-/******************************************************************************
-**  Function: CFE_PSP_DeleteProcessorReservedMemory
-**
-**  Purpose:
-**    This function cleans up all of the shared memory segments in the 
-**     Linux/OSX ports.
-**
-**  Arguments:
-**    (none)
-**
-**  Return:
-**    (none)
-*/
-void CFE_PSP_DeleteProcessorReservedMemory(void)
-{
-   
-   CFE_PSP_DeleteCDS();
-   CFE_PSP_DeleteResetArea();
-   CFE_PSP_DeleteUserReservedArea();
 }
    
 /*

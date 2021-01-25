@@ -32,7 +32,6 @@
 #############################################################################
 
 # Collect PSP includes and source
-#set(PSP_INC_DIRS ${PSP_INC_DIRS} ${CMAKE_CURRENT_LIST_DIR}/../inc)
 set(PSP_INC_DIRS ${PSP_INC_DIRS} 
     ${CMAKE_CURRENT_LIST_DIR}/../inc)
 
